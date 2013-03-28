@@ -69,7 +69,7 @@ public class SwitchOverflowTest implements IFloodlightModule,
 	protected static String dpid = "00:00:00:00:00:00:00:01";
 
 	// Our dependencies
-	protected IFloodlightProviderService floodlightProvider;
+	protected static IFloodlightProviderService floodlightProvider;
 	protected IRestApiService restApi;
 
 	protected ICounterStoreService counterStore;
@@ -91,15 +91,6 @@ public class SwitchOverflowTest implements IFloodlightModule,
      */
     public static void pushFLows(String dpid) {
 
-//               OFFLOWMOD FM = (OFFLOWMOD) FLOODLIGHTPROVIDER.GETOFMESSAGEFACTORY()
-//                       .GETMESSAGE(OFTYPE.FLOW_MOD);
-//               	
-//               
-//               OFMATCH OFMATCH = NEW OFMATCH();
-//        
-//               FM.SETMATCH(OFMATCH);
-//               SFP.ADDFLOW("TEST", FM, DPID);
-    	
  /*   	
     	List actionsTo = new ArrayList();
     	String id = String.valueOf((int) (Math.random()*10000));
@@ -117,8 +108,17 @@ public class SwitchOverflowTest implements IFloodlightModule,
     	sfp.addFlow(id, fmTo, dpid);
     	*/
     	
+    	for(int i = 0; i < 10000; i++)
+    	{
     	
-    	for (int i = 0; i < 5; i++) {
+    		OFFlowMod fm = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
+    		OFMatch ofMatch = new OFMatch();
+    		fm.setMatch(ofMatch);
+    	
+    		String id = String.valueOf((int) i);
+    		
+    		sfp.addFlow(id, fm, dpid);
+    	
     		System.out.println("yo");
     	}
 
@@ -176,7 +176,7 @@ public class SwitchOverflowTest implements IFloodlightModule,
 			throws FloodlightModuleException {
 		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
 		restApi = context.getServiceImpl(IRestApiService.class);
-
+		sfp = context.getServiceImpl(IStaticFlowEntryPusherService.class);
 	}
 
 	@Override

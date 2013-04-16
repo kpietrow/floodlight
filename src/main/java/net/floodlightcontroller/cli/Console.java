@@ -4,7 +4,7 @@ package net.floodlightcontroller.cli;
 * Copyright (c) 2013, California Institute of Technology
 * ALL RIGHTS RESERVED.
 * Based on Government Sponsored Research DE-SC0007346
-* Autor Michael Bredel <michael.bredel@cern.ch>
+* Author Michael Bredel <michael.bredel@cern.ch>
 * 
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.

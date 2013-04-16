@@ -46,6 +46,8 @@ public class ExitCmd implements ICommand {
 	private String commandString = "exit";
 	/** The Arguments used by this command. */
 	private String arguments = null;
+	/** The command's help text. */
+	private String help = "Exits CLI";
 
 	@Override
 	public String getCommandString() {
@@ -59,7 +61,7 @@ public class ExitCmd implements ICommand {
 
 	@Override
 	public String getHelpText() {
-		return "";
+		return help;
 	}
 
 	@Override

@@ -51,7 +51,7 @@ public class ShowCmd implements ICommand {
 	/** The command's arguments. */
 	private String arguments = null;
 	/** The command's help text. */
-	private String help = null;
+	private String help = "Autocompletes Show commands";
 
 	@Override
 	public String getCommandString() {

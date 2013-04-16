@@ -62,7 +62,7 @@ public class ShowHostCmd implements ICommand  {
 	/** The command's arguments. */
 	private String arguments = null;
 	/** The command's help text. */
-	private String help = null;
+	private String help = "Displays information about the current host";
 	
 	/**
 	 * Constructor.

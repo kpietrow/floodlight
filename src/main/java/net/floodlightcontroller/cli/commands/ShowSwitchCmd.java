@@ -65,7 +65,7 @@ public class ShowSwitchCmd implements ICommand {
 	/** The command's arguments. */
 	private String arguments = "[SWITCH]";
 	/** The command's help text. */
-	private String help = null;
+	private String help = "Displays current switches";
 
 	@Override
 	public String getCommandString() {

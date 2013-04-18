@@ -127,7 +127,7 @@ public class SwitchOverflowTest implements IFloodlightModule,
      * @param long pinSwitch
      */
     public static void pushFLows() {
- /*   	
+    	/*   	
     	List actionsTo = new ArrayList();
     	String id = String.valueOf((int) (Math.random()*10000));
     	
@@ -146,16 +146,16 @@ public class SwitchOverflowTest implements IFloodlightModule,
     	
     	/*
     	 *Working code to get a switche's dpid
-    	 * a
+    	 * 
+    	 *
     	 */
-    	/*
     	Map<Long, IOFSwitch> activeswitches = floodlightProvider.getSwitches();
     	String currentswitch = (activeswitches.get(new Long(1)).toString());
     	int index = currentswitch.indexOf("DPID");
     	System.out.println(index);
     	String dpid = currentswitch.substring(index + 5, index + 28);
     	System.out.println(dpid);
-    	*/
+    	
     	
     	
     	
@@ -172,7 +172,7 @@ public class SwitchOverflowTest implements IFloodlightModule,
     	//45 in b/t
     	
     	String dpid = therethere.substring(index + 5, index + 28);
-    
+    	*/
     
     
     		for(int i = 0; i < 500; i++)
@@ -187,11 +187,7 @@ public class SwitchOverflowTest implements IFloodlightModule,
     			sfp.addFlow(id, fm, dpid);
     		}
     		
-    		System.out.println(activeswitches);
-    		System.out.println(hi);
-    		System.out.println(yo);
-    		System.out.println(therethere);
-		*/
+    		
     }
     
     

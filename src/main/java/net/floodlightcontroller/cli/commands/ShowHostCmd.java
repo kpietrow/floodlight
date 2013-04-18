@@ -137,16 +137,20 @@ public class ShowHostCmd implements ICommand  {
 			row.add(entry.getMACAddressString());
 			row.add(entry.getVlanId().toString());
 			row.add("unknown");
-			row.add(entry.getIPv4Addresses()[0].toString());
+			try {
+				row.add(entry.getIPv4Addresses()[0].toString());
+			} catch (IndexOutOfBoundsException e) {
+				row.add("");
+			}
 			row.add(entry.getAttachmentPoints().toString());
 			row.add("");
 			row.add(this.parseDate(entry.getLastSeen()));
-
 			stringTable.addRow(row);
 		}
         
 		// Return string table as a string.
         return stringTable.toString();
+        
 	}
 	
 	/**
@@ -157,8 +161,9 @@ public class ShowHostCmd implements ICommand  {
 	 * @return A formated date string.
 	 */
 	private String parseDate(Date date) {
-		SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
-		return dateformat.format(date);
+		return "in parse now";
+		//SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+		//return dateformat.format(date);
 	}
 
 }

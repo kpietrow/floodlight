@@ -125,8 +125,8 @@ public class Cli implements IFloodlightModule {
 		commander.addCommand(new HelpCmd());
 		commander.addCommand(new ShowSwitchCmd());
 		commander.addCommand(new ShowHostCmd(context));
-		commander.addCommand(new ShowTopoCmd());
 		commander.addCommand(new AddFlowCmd());
+		commander.addCommand(new AddCmd());
 		
 		// Initialize the SSH server.
 		SshServer sshd = SshServer.setUpDefaultServer();

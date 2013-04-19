@@ -1,64 +1,67 @@
 package net.floodlightcontroller.cli.commands;
 
+/*
+* Copyright (c) 2013, California Institute of Technology
+* ALL RIGHTS RESERVED.
+* Based on Government Sponsored Research DE-SC0007346
+* Author Michael Bredel <michael.bredel@cern.ch>
+* 
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+* 
+*     http://www.apache.org/licenses/LICENSE-2.0
+* 
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+* A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+* HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+* BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+* OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+* AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+* LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+* WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+* 
+* Neither the name of the California Institute of Technology
+* (Caltech) nor the names of its contributors may be used to endorse
+* or promote products derived from this software without specific prior
+* written permission.
+*/
+
 import java.io.IOException;
-import java.net.SocketAddress;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
-import java.util.concurrent.locks.Lock;
 
-import org.jboss.netty.channel.Channel;
-import org.openflow.protocol.OFFeaturesReply;
-import org.openflow.protocol.OFFlowMod;
-import org.openflow.protocol.OFMatch;
-import org.openflow.protocol.OFMessage;
-import org.openflow.protocol.OFPhysicalPort;
-import org.openflow.protocol.OFStatisticsRequest;
-import org.openflow.protocol.OFType;
-import org.openflow.protocol.statistics.OFDescriptionStatistics;
-import org.openflow.protocol.statistics.OFStatistics;
-import org.restlet.resource.ClientResource;
-
-import jline.console.completer.Completer;
 import net.floodlightcontroller.cli.IConsole;
-import net.floodlightcontroller.core.FloodlightContext;
-import net.floodlightcontroller.core.IFloodlightProviderService;
-import net.floodlightcontroller.core.IFloodlightProviderService.Role;
-import net.floodlightcontroller.core.IOFMessageListener;
-import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.core.internal.Controller;
-import net.floodlightcontroller.core.module.FloodlightModuleContext;
-import net.floodlightcontroller.core.module.FloodlightModuleException;
-import net.floodlightcontroller.core.module.IFloodlightModule;
-import net.floodlightcontroller.core.module.IFloodlightService;
-import net.floodlightcontroller.restserver.IRestApiService;
-import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
-import net.floodlightcontroller.switchoverflow.WebResources;
-import net.floodlightcontroller.threadpool.IThreadPoolService;
+import net.floodlightcontroller.cli.utils.StringTable;
+
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.restlet.resource.ClientResource;
+import org.restlet.resource.ResourceException;
 
 /**
- * This command will return the current topology of the
- * network when called.
+ * Adds static flow.
  * 
- * @author Kevin Pietrow, <kpietrow@gmail.com>
+ * @author Kevin Pietrow <kpietrow@gmail.com>
  */
-public class AddFlowCmd implements ICommand, IConsole, IFloodlightModule,
-IOFMessageListener, IOFSwitch{
+public class AddFlowCmd implements ICommand {
 	/** The command string. */
 	private String commandString = "add flow";
 	/** The command's arguments. */
-	private String arguments = null;
+	private String arguments = "[JSON]";
 	/** The command's help text. */
-	private String help = "Add a new flow to current network";
-	/** The prompt string of the command line. */
-    private String prompt;
-	// These use the Rest API
-	protected static IFloodlightProviderService floodlightProvider;
-	protected IRestApiService restApi;
-	protected static IStaticFlowEntryPusherService sfp;
+	private String help = "Adds static flow";
 
 	@Override
 	public String getCommandString() {
@@ -74,470 +77,123 @@ IOFMessageListener, IOFSwitch{
 	public String getHelpText() {
 		return help;
 	}
-	
-	
-	@Override
-	public void setPrompt(String prompt) {
-		this.prompt = prompt;
-	}
 
 	@Override
-	public String getPrompt() {
-		if (this.prompt != null)
-			return this.prompt;
+	public synchronized String execute(IConsole console, String arguments) {
+		/* The Restlet client resource, accessed using the REST API. */
+		ClientResource cr = new ClientResource("http://localhost:8080/wm/staticflowentrypusher/json");
 		
-		return "> ";
-	}
-
-	@Override
-	public Collection<Completer> getCompleters() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void write(String string) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
-	
-	@Override
-	public Collection<Class<? extends IFloodlightService>> getModuleDependencies() {
-		Collection<Class<? extends IFloodlightService>> l = 
-                new ArrayList<Class<? extends IFloodlightService>>();
-        l.add(IRestApiService.class);
-        return l;
-	}
-	
-	@Override
-	public void init(FloodlightModuleContext context)
-			throws FloodlightModuleException {
-		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
-		restApi = context.getServiceImpl(IRestApiService.class);
-		sfp = context.getServiceImpl(IStaticFlowEntryPusherService.class);
-	}
-
-	@Override
-	public void startUp(FloodlightModuleContext context) {
-		floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
-	}
-	
-	
-	 /**
-     * used to push given route using static flow entry pusher
-     * @param boolean inBound
-     * @param Route route
-     * @param IPClient client
-     * @param LBMember member
-     * @param long pinSwitch
-     */
-	@Override
-	public String execute(IConsole console, String arguments) {
+		if (arguments.length() == 0 || arguments.trim().equalsIgnoreCase("all"))
+			return "No flow specs entered.";
 		
-
-		floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
-
+		cr.post(arguments);
+		
+		
+		return "yay";
+		
+		// If no argument is given
 		/*
-		try {
-			Map<Long, IOFSwitch> activeswitches = floodlightProvider.getSwitches();
-		} catch (NullPointerException e){
-			return "activeswitches nogo";
-		}
-		finally {
-			return "activeswitches ok";
-		}
-    	String currentswitch = (activeswitches.get(new Long(1)).toString());
-    	int index = currentswitch.indexOf("DPID");
-    	String dpid = currentswitch.substring(index + 5, index + 28);
+		if (arguments.length() == 0 || arguments.trim().equalsIgnoreCase("all"))
+			return this.execute(console, cr);
 		
+		try {	
+			jsonData = this.filterJsonData(this.parseJson(cr.get().getText()), arguments);
+		} catch (ResourceException e) {
+			System.out.println("Resource not found");
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		// Return string.
+		return result;
 		*/
-		String dpid = "00:00:00:00:00:00:00:01";
+	}
+	
+	/**
+	 * Executes a command without any arguments.
+	 * 
+	 * @param console The console where the command was initialized.
+	 * @param clientResource The client resource retrieved by using the REST API.
+	 * @return A string that might be returned by the command execution.
+	 */
+	public String execute(IConsole console, ClientResource clientResource) {
+		/* A List of JSON data objects retrieved by using the REST API. */
+        List<Map<String,Object>> jsonData = new ArrayList<Map<String,Object>>();
+		/* The resulting string. */
+		String result = "";
 		
+		try {	
+			jsonData = this.parseJson(clientResource.get().getText());
+		} catch (ResourceException e) {
+			System.out.println("Resource not found");
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
-		OFFlowMod fm = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
-		OFMatch ofMatch = new OFMatch();
-		fm.setMatch(ofMatch);
+		return result;
+	}
+	
+	/**
+	 * Parses a JSON string and decomposes all JSON arrays and objects. Stores the
+	 * resulting strings in a nested Map of string objects.
+	 * 
+	 * @param jsonString
+	 */
+	@SuppressWarnings("unchecked")
+	private List<Map<String,Object>> parseJson(String jsonString) throws IOException {
+		/* The Jackson JSON parser. */
+        JsonParser jp;
+        /* The Jackson JSON factory. */
+        JsonFactory f = new JsonFactory();
+        /* The Jackson object mapper. */
+        ObjectMapper mapper = new ObjectMapper();
+        /* A list of JSON data objects retrieved by using the REST API. */
+        List<Map<String,Object>> jsonData = new ArrayList<Map<String,Object>>();
+        
+        try {
+            jp = f.createJsonParser(jsonString);
+        } catch (JsonParseException e) {
+            throw new IOException(e);
+        }
+       
+        // Move to the first object in the array.
+        jp.nextToken();
+        if (jp.getCurrentToken() != JsonToken.START_ARRAY) {
+        	throw new IOException("Expected START_ARRAY instead of " + jp.getCurrentToken());
+        }
+        
+        // Retrieve the information from JSON
+        while (jp.nextToken() == JsonToken.START_OBJECT) {
+        	jsonData.add(mapper.readValue(jp, Map.class));
+        }
+        
+        // Close the JSON parser.
+        jp.close();
+        
+        // Return.
+        return jsonData;
+	}
 
-		String id = String.valueOf((int) 5);
-
-		sfp.addFlow(id, fm, dpid);
+	/**
+	 * Filters the list of JSON data objects to find a specific switch.
+	 * 
+	 * @param jsonData A list of JSON data objects retrieved by using the REST API.
+	 * @param dpid The filter string.
+	 * @return A filters list of JSON data objects.
+	 */
+	private List<Map<String,Object>> filterJsonData(List<Map<String,Object>> jsonData, String dpid) {
+		/* A filtered list of JSON data objects. */
+		List<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
 		
+		for (Map<String,Object> entry : jsonData) {
+			if (dpid.equalsIgnoreCase((String)entry.get("dpid"))) {
+				result.add(entry);
+			}
+		}
 		
-		
-		String temp = "everybody poops";
-		return temp;
+		return result;
 	}
-
-	@Override
-	public String getName() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean isCallbackOrderingPrereq(OFType type, String name) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean isCallbackOrderingPostreq(OFType type, String name) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public void setFloodlightProvider(Controller controller) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setThreadPoolService(IThreadPoolService threadPool) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setChannel(Channel channel) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void write(OFMessage m, FloodlightContext bc) throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void write(List<OFMessage> msglist, FloodlightContext bc)
-			throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void disconnectOutputStream() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public int getBuffers() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getActions() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getCapabilities() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public byte getTables() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void setFeaturesReply(OFFeaturesReply featuresReply) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public Collection<OFPhysicalPort> getEnabledPorts() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Collection<Short> getEnabledPortNumbers() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public OFPhysicalPort getPort(short portNumber) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public OFPhysicalPort getPort(String portName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setPort(OFPhysicalPort port) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void deletePort(short portNumber) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void deletePort(String portName) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public Collection<OFPhysicalPort> getPorts() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean portEnabled(short portName) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean portEnabled(String portName) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean portEnabled(OFPhysicalPort port) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public long getId() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public String getStringId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public SocketAddress getInetAddress() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Map<Object, Object> getAttributes() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Date getConnectedSince() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public int getNextTransactionId() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public Future<List<OFStatistics>> getStatistics(OFStatisticsRequest request)
-			throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Future<OFFeaturesReply> querySwitchFeaturesReply()
-			throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void deliverOFFeaturesReply(OFMessage reply) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void cancelFeaturesReply(int transactionId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isConnected() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public void setConnected(boolean connected) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public Role getHARole() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setHARole(Role role, boolean haRoleReplyReceived) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void deliverStatisticsReply(OFMessage reply) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void cancelStatisticsReply(int transactionId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void cancelAllStatisticsReplies() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean hasAttribute(String name) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public Object getAttribute(String name) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean attributeEquals(String name, Object other) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public void setAttribute(String name, Object value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public Object removeAttribute(String name) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void clearAllFlowMods() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean updateBroadcastCache(Long entry, Short port) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public Map<Short, Long> getPortBroadcastHits() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void sendStatsQuery(OFStatisticsRequest request, int xid,
-			IOFMessageListener caller) throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void flush() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public Lock getListenerReadLock() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Lock getListenerWriteLock() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setSwitchProperties(OFDescriptionStatistics description) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public OFPortType getPortType(short port_num) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean isFastPort(short port_num) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public List<Short> getUplinkPorts() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public net.floodlightcontroller.core.IListener.Command receive(
-			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Collection<Class<? extends IFloodlightService>> getModuleServices() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Map<Class<? extends IFloodlightService>, IFloodlightService> getServiceImpls() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 
 }

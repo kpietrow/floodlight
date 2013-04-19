@@ -62,7 +62,7 @@ public class ShowHostCmd implements ICommand  {
 	/** The command's arguments. */
 	private String arguments = null;
 	/** The command's help text. */
-	private String help = "Displays information about the current host";
+	private String help = "Displays information about the current hosts";
 	
 	/**
 	 * Constructor.
@@ -137,10 +137,11 @@ public class ShowHostCmd implements ICommand  {
 			row.add(entry.getMACAddressString());
 			row.add(entry.getVlanId().toString());
 			row.add("unknown");
+			// Handles the host having no IP address
 			try {
 				row.add(entry.getIPv4Addresses()[0].toString());
 			} catch (IndexOutOfBoundsException e) {
-				row.add("");
+				row.add("Unknown");
 			}
 			row.add(entry.getAttachmentPoints().toString());
 			row.add("");

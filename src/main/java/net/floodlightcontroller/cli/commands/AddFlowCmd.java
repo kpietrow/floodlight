@@ -41,12 +41,19 @@ import java.util.Map;
 
 import net.floodlightcontroller.cli.IConsole;
 import net.floodlightcontroller.cli.utils.StringTable;
+import net.floodlightcontroller.core.IFloodlightProviderService;
+import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.core.module.FloodlightModuleContext;
+import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.openflow.protocol.OFFlowMod;
+import org.openflow.protocol.OFMatch;
+import org.openflow.protocol.OFType;
 import org.restlet.resource.ClientResource;
 import org.restlet.resource.ResourceException;
 
@@ -56,13 +63,28 @@ import org.restlet.resource.ResourceException;
  * @author Kevin Pietrow <kpietrow@gmail.com>
  */
 public class AddFlowCmd implements ICommand {
+	/** Floodlight Context Service. */
+	private FloodlightModuleContext context;
 	/** The command string. */
 	private String commandString = "add flow";
 	/** The command's arguments. */
-	private String arguments = "[JSON]";
+	private String arguments = null;
 	/** The command's help text. */
 	private String help = "Adds static flow";
 
+	protected static IStaticFlowEntryPusherService sfp;
+
+	protected static IFloodlightProviderService floodlightProvider;
+
+	/**
+	 * Constructor.
+	 * 
+	 * @param context The Floodlight context service.
+	 */
+	public AddFlowCmd(FloodlightModuleContext context) {
+		this.context = context;
+	}
+	
 	@Override
 	public String getCommandString() {
 		return commandString;
@@ -80,7 +102,29 @@ public class AddFlowCmd implements ICommand {
 
 	@Override
 	public synchronized String execute(IConsole console, String arguments) {
+		
+		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
+
+		sfp = context.getServiceImpl(IStaticFlowEntryPusherService.class);
+		
+		
+		Map<Long, IOFSwitch> activeswitches = floodlightProvider.getSwitches();
+    	String currentswitch = (activeswitches.get(new Long(1)).toString());
+    	int index = currentswitch.indexOf("DPID");
+    	System.out.println(index);
+    	String dpid = currentswitch.substring(index + 5, index + 28);
+    	System.out.println(dpid);
+		
+    	OFFlowMod fm = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
+		OFMatch ofMatch = new OFMatch();
+		fm.setMatch(ofMatch);
+
+		sfp.addFlow(arguments, fm, dpid);
+		
+		return "poop";
+		
 		/* The Restlet client resource, accessed using the REST API. */
+		/*
 		ClientResource cr = new ClientResource("http://localhost:8080/wm/staticflowentrypusher/json");
 		
 		if (arguments.length() == 0 || arguments.trim().equalsIgnoreCase("all"))
@@ -92,7 +136,7 @@ public class AddFlowCmd implements ICommand {
 		return "yay";
 		
 		// If no argument is given
-		/*
+		
 		if (arguments.length() == 0 || arguments.trim().equalsIgnoreCase("all"))
 			return this.execute(console, cr);
 		
@@ -108,92 +152,6 @@ public class AddFlowCmd implements ICommand {
 		// Return string.
 		return result;
 		*/
-	}
 	
-	/**
-	 * Executes a command without any arguments.
-	 * 
-	 * @param console The console where the command was initialized.
-	 * @param clientResource The client resource retrieved by using the REST API.
-	 * @return A string that might be returned by the command execution.
-	 */
-	public String execute(IConsole console, ClientResource clientResource) {
-		/* A List of JSON data objects retrieved by using the REST API. */
-        List<Map<String,Object>> jsonData = new ArrayList<Map<String,Object>>();
-		/* The resulting string. */
-		String result = "";
-		
-		try {	
-			jsonData = this.parseJson(clientResource.get().getText());
-		} catch (ResourceException e) {
-			System.out.println("Resource not found");
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		return result;
 	}
-	
-	/**
-	 * Parses a JSON string and decomposes all JSON arrays and objects. Stores the
-	 * resulting strings in a nested Map of string objects.
-	 * 
-	 * @param jsonString
-	 */
-	@SuppressWarnings("unchecked")
-	private List<Map<String,Object>> parseJson(String jsonString) throws IOException {
-		/* The Jackson JSON parser. */
-        JsonParser jp;
-        /* The Jackson JSON factory. */
-        JsonFactory f = new JsonFactory();
-        /* The Jackson object mapper. */
-        ObjectMapper mapper = new ObjectMapper();
-        /* A list of JSON data objects retrieved by using the REST API. */
-        List<Map<String,Object>> jsonData = new ArrayList<Map<String,Object>>();
-        
-        try {
-            jp = f.createJsonParser(jsonString);
-        } catch (JsonParseException e) {
-            throw new IOException(e);
-        }
-       
-        // Move to the first object in the array.
-        jp.nextToken();
-        if (jp.getCurrentToken() != JsonToken.START_ARRAY) {
-        	throw new IOException("Expected START_ARRAY instead of " + jp.getCurrentToken());
-        }
-        
-        // Retrieve the information from JSON
-        while (jp.nextToken() == JsonToken.START_OBJECT) {
-        	jsonData.add(mapper.readValue(jp, Map.class));
-        }
-        
-        // Close the JSON parser.
-        jp.close();
-        
-        // Return.
-        return jsonData;
-	}
-
-	/**
-	 * Filters the list of JSON data objects to find a specific switch.
-	 * 
-	 * @param jsonData A list of JSON data objects retrieved by using the REST API.
-	 * @param dpid The filter string.
-	 * @return A filters list of JSON data objects.
-	 */
-	private List<Map<String,Object>> filterJsonData(List<Map<String,Object>> jsonData, String dpid) {
-		/* A filtered list of JSON data objects. */
-		List<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
-		
-		for (Map<String,Object> entry : jsonData) {
-			if (dpid.equalsIgnoreCase((String)entry.get("dpid"))) {
-				result.add(entry);
-			}
-		}
-		
-		return result;
-	}
-
 }

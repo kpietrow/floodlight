@@ -37,32 +37,69 @@ public class HelpCmd implements ICommand {
 	}
 
 	public synchronized String execute(IConsole console, String arguments) {
-		CommandHandler commander = CommandHandler.getInstance();
-		/* The String builder that hold the resulting string. */
-		StringBuilder result = new StringBuilder();
+		// If no arguments are given
+		if (arguments.length() == 0 || arguments.trim().equalsIgnoreCase("all")) {
+			CommandHandler commander = CommandHandler.getInstance();
+			/* The String builder that hold the resulting string. */
+			StringBuilder result = new StringBuilder();
 		
-		// Find available commands.
-		for (ICommand comp : commander.getCommands()) {
-			if (comp == null) {
-				break;
-			}
-			else {
-				String temp = comp.getCommandString();
-				// Append command 
-				result.append("\n" + temp);
-				// Check length. Add on tabs according to length.
-				if (temp.length() < 8) {
-					result.append("\t\t\t" + comp.getHelpText());
+			// Find available commands.
+			for (ICommand comp : commander.getCommands()) {
+				if (comp == null) {
+					break;
 				}
 				else {
-					result.append("\t\t" + comp.getHelpText());
+					String temp = comp.getCommandString();
+					// Append command 
+					result.append("\n" + temp);
+					// Check length. Add on tabs according to length.
+					if (temp.length() < 8) {
+						result.append("\t\t\t" + comp.getHelpText());
+					}
+					else {
+						result.append("\t\t" + comp.getHelpText());
+					}
 				}
 			}
+			// Return.
+			return result.toString();
 		}
-		 
-	
-		// Return.
-		return result.toString();
+		// If argument is given
+		else {
+			CommandHandler commander = CommandHandler.getInstance();
+			/* The String builder that hold the resulting string. */
+			StringBuilder result = new StringBuilder();
+		
+			// Find available commands.
+			for (ICommand comp : commander.getCommands()) {
+				if (comp == null) {
+					break;
+				}
+				// Checks if command same as arguments
+				else if (arguments.equals(comp.getCommandString())) {
+					String temp = comp.getCommandString();
+					// Append command 
+					result.append("\n" + temp);
+					// Check length. Add on tabs according to length.
+					if (temp.length() < 8) {
+						result.append("\t\t\t" + comp.getHelpText());
+					}
+					else {
+						result.append("\t\t" + comp.getHelpText());
+					}
+				}
+			}
+			// If no match, return normal help command
+			if (result.length() == 0) {
+				return this.execute(console, "");
+			}
+			// Return match
+			else {
+				return result.toString();
+			}
+		}
+		
+		
 	}
 
 }

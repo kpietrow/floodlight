@@ -39,7 +39,7 @@ import net.floodlightcontroller.storage.IStorageSourceService;
  *
  */
 @LogMessageCategory("Static Flow Pusher")
-public class StaticFlowEntryPusherResource extends ServerResource {
+public class test extends ServerResource {
     protected static Logger log = LoggerFactory.getLogger(StaticFlowEntryPusherResource.class);
     
     /**

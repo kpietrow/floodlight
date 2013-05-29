@@ -49,16 +49,7 @@ public class HelpCmd implements ICommand {
 					break;
 				}
 				else {
-					String temp = comp.getCommandString();
-					// Append command 
-					result.append("\n" + temp);
-					// Check length. Add on tabs according to length.
-					if (temp.length() < 8) {
-						result.append("\t\t\t" + comp.getHelpText());
-					}
-					else {
-						result.append("\t\t" + comp.getHelpText());
-					}
+					result.append(buildEntry(comp));
 				}
 			}
 			// Return.
@@ -77,16 +68,7 @@ public class HelpCmd implements ICommand {
 				}
 				// Checks if command same as arguments
 				else if (arguments.equals(comp.getCommandString())) {
-					String temp = comp.getCommandString();
-					// Append command 
-					result.append("\n" + temp);
-					// Check length. Add on tabs according to length.
-					if (temp.length() < 8) {
-						result.append("\t\t\t" + comp.getHelpText());
-					}
-					else {
-						result.append("\t\t" + comp.getHelpText());
-					}
+					result.append(buildEntry(comp));
 				}
 			}
 			// If no match, return normal help command
@@ -100,6 +82,22 @@ public class HelpCmd implements ICommand {
 		}
 		
 		
+	}
+	
+	private String buildEntry(ICommand comp) {
+		StringBuilder result = new StringBuilder();
+		String temp = comp.getCommandString();
+		// Append command 
+		result.append("\n" + temp);
+		// Check length. Add on tabs according to length.
+		if (temp.length() < 8) {
+			result.append("\t\t\t" + comp.getHelpText());
+		}
+		else {
+			result.append("\t\t" + comp.getHelpText());
+		}
+		
+		return result.toString();
 	}
 
 }

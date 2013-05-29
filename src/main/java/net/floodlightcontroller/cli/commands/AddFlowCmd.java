@@ -43,8 +43,13 @@ import net.floodlightcontroller.cli.IConsole;
 import net.floodlightcontroller.cli.utils.StringTable;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.core.annotations.LogMessageDoc;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
+import net.floodlightcontroller.staticflowentry.StaticFlowEntries;
+import net.floodlightcontroller.staticflowentry.StaticFlowEntryPusher;
+import net.floodlightcontroller.staticflowentry.web.StaticFlowEntryPusherResource;
+import net.floodlightcontroller.storage.IStorageSourceService;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParseException;
@@ -55,16 +60,16 @@ import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFType;
 import org.restlet.resource.ClientResource;
+import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
+import org.restlet.resource.ServerResource;
 
 /**
  * Adds static flow.
  * 
  * @author Kevin Pietrow <kpietrow@gmail.com>
  */
-public class AddFlowCmd implements ICommand {
-	/** Floodlight Context Service. */
-	private FloodlightModuleContext context;
+public class AddFlowCmd extends ServerResource implements ICommand{
 	/** The command string. */
 	private String commandString = "add flow";
 	/** The command's arguments. */
@@ -75,15 +80,7 @@ public class AddFlowCmd implements ICommand {
 	protected static IStaticFlowEntryPusherService sfp;
 
 	protected static IFloodlightProviderService floodlightProvider;
-
-	/**
-	 * Constructor.
-	 * 
-	 * @param context The Floodlight context service.
-	 */
-	public AddFlowCmd(FloodlightModuleContext context) {
-		this.context = context;
-	}
+	
 	
 	@Override
 	public String getCommandString() {
@@ -100,13 +97,36 @@ public class AddFlowCmd implements ICommand {
 		return help;
 	}
 
-	@Override
-	public synchronized String execute(IConsole console, String arguments) {
+	public synchronized String execute(IConsole console, String fmJson) {
+		if (fmJson.length() == 0 || fmJson.trim().equalsIgnoreCase("all"))
+			return "No flow specs entered.";	
 		
-		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
-
-		sfp = context.getServiceImpl(IStaticFlowEntryPusherService.class);
+		IStorageSourceService storageSource =
+                (IStorageSourceService)getContext().getAttributes().
+                    get(IStorageSourceService.class.getCanonicalName());
+        
+        Map<String, Object> rowValues;
+        try {
+            rowValues = StaticFlowEntries.jsonToStorageEntry(fmJson);
+            String status = null;
+            if (!checkMatchIp(rowValues)) {
+                status = "Warning! Pushing a static flow entry that matches IP " +
+                        "fields without matching for IP payload (ether-type 2048) will cause " +
+                        "the switch to wildcard higher level fields.";
+               // log.error(status);
+            } else {
+                status = "Entry pushed";
+            }
+            storageSource.insertRowAsync(StaticFlowEntryPusher.TABLE_NAME, rowValues);
+            return ("{\"status\" : \"" + status + "\"}");
+        } catch (IOException e) {
+           // log.error("Error parsing push flow mod request: " + fmJson, e);
+            e.printStackTrace();
+            return "{\"status\" : \"Error! Could not parse flod mod, see log for details.\"}";
+        }
 		
+		/*
+        
 		
 		Map<Long, IOFSwitch> activeswitches = floodlightProvider.getSwitches();
     	String currentswitch = (activeswitches.get(new Long(1)).toString());
@@ -120,8 +140,9 @@ public class AddFlowCmd implements ICommand {
 		fm.setMatch(ofMatch);
 
 		sfp.addFlow(arguments, fm, dpid);
-		
+
 		return "poop";
+		*/
 		
 		/* The Restlet client resource, accessed using the REST API. */
 		/*
@@ -152,6 +173,38 @@ public class AddFlowCmd implements ICommand {
 		// Return string.
 		return result;
 		*/
-	
 	}
+    
+    /**
+     * Checks to see if the user matches IP information without
+     * checking for the correct ether-type (2048).
+     * @param rows The Map that is a string representation of
+     * the static flow.
+     * @return True if they checked the ether-type, false otherwise
+     */
+    private boolean checkMatchIp(Map<String, Object> rows) {
+        boolean matchEther = false;
+        String val = (String) rows.get(StaticFlowEntryPusher.COLUMN_DL_TYPE);
+        if (val != null) {
+            int type = 0;
+            // check both hex and decimal
+            if (val.startsWith("0x")) {
+                type = Integer.parseInt(val.substring(2), 16);
+            } else {
+                try {
+                    type = Integer.parseInt(val);
+                } catch (NumberFormatException e) { /* fail silently */}
+            }
+            if (type == 2048) matchEther = true;
+        }
+        
+        if ((rows.containsKey(StaticFlowEntryPusher.COLUMN_NW_DST) || 
+                rows.containsKey(StaticFlowEntryPusher.COLUMN_NW_SRC) ||
+                rows.containsKey(StaticFlowEntryPusher.COLUMN_NW_PROTO) ||
+                rows.containsKey(StaticFlowEntryPusher.COLUMN_NW_TOS)) &&
+                (matchEther == false))
+            return false;
+        
+        return true;
+    }
 }

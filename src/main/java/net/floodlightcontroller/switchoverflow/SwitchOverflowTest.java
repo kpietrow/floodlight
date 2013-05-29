@@ -149,16 +149,29 @@ public class SwitchOverflowTest implements IFloodlightModule,
     	 * 
     	 *
     	 */
+    	//Map<Long, IOFSwitch> activeswitches = floodlightProvider.getSwitches();
+    	//String currentswitch = (activeswitches.get(new Long(1)).toString());
+    	//int index = currentswitch.indexOf("DPID");
+    	//System.out.println(index);
+    	//String dpid = currentswitch.substring(index + 5, index + 28);
+    	//System.out.println(dpid);
+    	
+    	String currentswitch = "";
+    	System.out.println("HAI");
     	Map<Long, IOFSwitch> activeswitches = floodlightProvider.getSwitches();
-    	String currentswitch = (activeswitches.get(new Long(1)).toString());
-    	int index = currentswitch.indexOf("DPID");
-    	System.out.println(index);
-    	String dpid = currentswitch.substring(index + 5, index + 28);
-    	System.out.println(dpid);
+    	System.out.println(activeswitches);
+    	System.out.println(activeswitches.size());
     	
-    	
-    	
-    	
+    	for (int i = 1; i <= activeswitches.size(); i++) {
+    		try {
+    			currentswitch = (activeswitches.get(new Long(i)).toString());
+    		} catch (NullPointerException e) {
+    			continue;
+    		}
+    		
+    		System.out.println("yo");
+    		System.out.println(currentswitch);
+    	}
     	
     	/*
     	Collection<IOFSwitch> hi = activeswitches.values();
@@ -175,17 +188,17 @@ public class SwitchOverflowTest implements IFloodlightModule,
     	*/
     
     
-    		for(int i = 0; i < 500; i++)
-    		{
+    		//for(int i = 0; i < 500; i++)
+    		//{
 	
-    			OFFlowMod fm = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
-    			OFMatch ofMatch = new OFMatch();
-    			fm.setMatch(ofMatch);
+    			//OFFlowMod fm = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
+    			//OFMatch ofMatch = new OFMatch();
+    			//fm.setMatch(ofMatch);
 	
-    			String id = String.valueOf((int) i);
+//    			String id = String.valueOf((int) i);
 		
-    			sfp.addFlow(id, fm, dpid);
-    		}
+    //			sfp.addFlow(id, fm, dpid);
+    //		}
     		
     		
     }

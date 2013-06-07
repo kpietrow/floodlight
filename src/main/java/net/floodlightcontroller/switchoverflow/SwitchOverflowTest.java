@@ -127,22 +127,7 @@ public class SwitchOverflowTest implements IFloodlightModule,
      * @param long pinSwitch
      */
     public static void pushFLows() {
-    	/*   	
-    	List actionsTo = new ArrayList();
-    	String id = String.valueOf((int) (Math.random()*10000));
     	
-    	OFFlowMod fmTo = new OFFlowMod();
-    	fmTo.setType(OFType.FLOW_MOD);
-    	OFAction outputTo = new OFActionOutput((short) 2);
-    	actionsTo.add(outputTo);
-    	OFMatch mTo = new OFMatch();
-    	mTo.setNetworkDestination(IPv4.toIPv4Address("10.0.0.2"));
-    	mTo.setDataLayerType(Ethernet.TYPE_IPv4);
-    	fmTo.setActions(actionsTo);
-    	fmTo.setMatch(mTo);
-    	
-    	sfp.addFlow(id, fmTo, dpid);
-    	*/
     	
     	/*
     	 *Working code to get a switche's dpid
@@ -173,19 +158,6 @@ public class SwitchOverflowTest implements IFloodlightModule,
     		System.out.println(currentswitch);
     	}
     	
-    	/*
-    	Collection<IOFSwitch> hi = activeswitches.values();
-    	Object yo = hi.toArray();
-    	String therethere = Arrays.deepToString((Object[]) yo);
-    	int index = therethere.indexOf("DPID");
-    	System.out.println(index);
-    	//37
-    		// 42
-    		// 65
-    	//45 in b/t
-    	
-    	String dpid = therethere.substring(index + 5, index + 28);
-    	*/
     
     
     		//for(int i = 0; i < 500; i++)

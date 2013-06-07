@@ -29,3 +29,4 @@ net.floodlightcontroller.firewall.Firewall
 net.floodlightcontroller.loadbalancer.LoadBalancer
 net.floodlightcontroller.switchoverflow.SwitchOverflowTest
 net.floodlightcontroller.cli.Cli
+net.floodlightcontroller.headerextract.HeaderExtract
